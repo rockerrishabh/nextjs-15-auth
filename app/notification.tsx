@@ -3,28 +3,23 @@
 import { useState, useEffect } from "react";
 import { subscribeUser, unsubscribeUser, sendNotification } from "./actions";
 
-function Modal({
-  children,
-  isOpen,
-  onClose,
-  title,
-}: {
+type ModalProps = {
   children: React.ReactNode;
   isOpen: boolean;
   onClose: () => void;
   title: string;
-}) {
+};
+
+function Modal({ children, isOpen, onClose, title }: ModalProps) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-96 p-6 relative">
-        <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
-          {title}
-        </h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 relative">
+        <h2 className="text-lg font-semibold mb-4 text-primary">{title}</h2>
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
           ✕
         </button>
         {children}
@@ -63,16 +58,12 @@ export function PushNotificationManager() {
 
   async function subscribeToPush() {
     try {
-      // Request permission from the user for push notifications
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         throw new Error("Push notification permission denied");
       }
 
-      // Register service worker
       const registration = await navigator.serviceWorker.ready;
-
-      // Subscribe to push notifications
       const sub = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
@@ -109,7 +100,7 @@ export function PushNotificationManager() {
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-600">
+        className="fixed bottom-4 right-4 bg-primary text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-600">
         Notifications
       </button>
       <Modal
@@ -119,7 +110,7 @@ export function PushNotificationManager() {
         {isSupported ? (
           subscription ? (
             <div className="space-y-4">
-              <p className="text-green-600 font-medium">
+              <p className="text-green-500 font-medium">
                 You are subscribed to push notifications.
               </p>
               <button
@@ -137,19 +128,19 @@ export function PushNotificationManager() {
                 />
                 <button
                   onClick={sendTestNotification}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
                   Send Test
                 </button>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-gray-600 font-medium">
+              <p className="text-secondary font-medium">
                 You are not subscribed to push notifications.
               </p>
               <button
                 onClick={subscribeToPush}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
                 Subscribe
               </button>
             </div>
@@ -176,7 +167,6 @@ export function InstallPrompt() {
     setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream);
     setIsStandalone(window.matchMedia("(display-mode: standalone)").matches);
 
-    // Listen for beforeinstallprompt event to trigger install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -194,21 +184,19 @@ export function InstallPrompt() {
 
   const handleInstall = async () => {
     if (deferredPrompt) {
-      // Show the install prompt
       deferredPrompt.prompt();
-      // Wait for the user to respond to the prompt
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === "accepted") {
         console.log("User accepted the A2HS prompt");
       } else {
         console.log("User dismissed the A2HS prompt");
       }
-      setDeferredPrompt(null); // Reset deferred prompt
+      setDeferredPrompt(null);
     }
   };
 
   if (isStandalone) {
-    return null; // Don't show install button if already installed
+    return null;
   }
 
   return (
@@ -225,11 +213,11 @@ export function InstallPrompt() {
         <div className="space-y-4">
           <button
             onClick={handleInstall}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
             Add to Home Screen
           </button>
           {isIOS && (
-            <p className="text-gray-600">
+            <p className="text-secondary">
               To install this app on your iOS device, tap the share button{" "}
               <span role="img" aria-label="share icon">
                 ⎋
@@ -237,7 +225,7 @@ export function InstallPrompt() {
               and then &quot;Add to Home Screen&quot;{" "}
               <span role="img" aria-label="plus icon">
                 ➕
-              </span>
+              </span>{" "}
               .
             </p>
           )}
