@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { subscribeUser, unsubscribeUser, sendNotification } from "./actions";
+import {
+  subscribeUser,
+  unsubscribeUser,
+  sendNotification,
+  PushSubscriptionJSON,
+} from "./actions";
 
 type ModalProps = {
   children: React.ReactNode;
@@ -64,35 +69,50 @@ export function PushNotificationManager() {
       }
 
       const registration = await navigator.serviceWorker.ready;
-      const sub = await registration.pushManager.subscribe({
+
+      const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
       });
 
-      setSubscription(sub);
-      await subscribeUser(sub);
-    } catch (error) {
-      if ((error as Error).name === "NotAllowedError") {
-        console.error("User denied permission for push notifications");
-        alert(
-          "You have denied notifications. Please enable them in your browser settings."
-        );
-      } else {
-        console.error("Push subscription failed:", error);
+      // Convert subscription to JSON and ensure `endpoint` is defined
+      const subscriptionData = subscription.toJSON();
+      if (!subscriptionData.endpoint) {
+        throw new Error("Subscription endpoint is missing.");
       }
+
+      // Send JSON subscription to server
+      await subscribeUser(subscriptionData as PushSubscriptionJSON);
+
+      setSubscription(subscription); // Store the `PushSubscription` object locally
+      console.log("Subscribed to push notifications:", subscriptionData);
+    } catch (error) {
+      console.error("Push subscription failed:", error);
     }
   }
 
   async function unsubscribeFromPush() {
-    await subscription?.unsubscribe();
-    setSubscription(null);
-    await unsubscribeUser();
+    try {
+      if (subscription) {
+        await subscription.unsubscribe();
+        setSubscription(null);
+        await unsubscribeUser();
+        console.log("Unsubscribed from push notifications.");
+      }
+    } catch (error) {
+      console.error("Failed to unsubscribe:", error);
+    }
   }
 
   async function sendTestNotification() {
     if (subscription) {
-      await sendNotification(message);
-      setMessage("");
+      try {
+        await sendNotification(message);
+        setMessage("");
+        console.log("Test notification sent.");
+      } catch (error) {
+        console.error("Failed to send test notification:", error);
+      }
     }
   }
 
@@ -100,7 +120,7 @@ export function PushNotificationManager() {
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-4 right-4 bg-primary text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-600">
+        className="fixed bottom-4 right-4 bg-primary text-slate-800 hover:text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-600">
         Notifications
       </button>
       <Modal
@@ -128,19 +148,19 @@ export function PushNotificationManager() {
                 />
                 <button
                   onClick={sendTestNotification}
-                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
+                  className="px-4 py-2 bg-primary text-slate-800 hover:text-white rounded-lg hover:bg-blue-600">
                   Send Test
                 </button>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-secondary font-medium">
+              <p className="text-slate-300 font-medium">
                 You are not subscribed to push notifications.
               </p>
               <button
                 onClick={subscribeToPush}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
+                className="px-4 py-2 bg-primary text-slate-800 hover:text-white rounded-lg hover:bg-blue-600">
                 Subscribe
               </button>
             </div>
@@ -213,7 +233,7 @@ export function InstallPrompt() {
         <div className="space-y-4">
           <button
             onClick={handleInstall}
-            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
+            className="px-4 py-2 bg-primary text-slate-800 hover:text-white rounded-lg hover:bg-blue-600">
             Add to Home Screen
           </button>
           {isIOS && (
@@ -243,7 +263,7 @@ export function PWAButton() {
         <>
           <button
             onClick={() => setOpen(false)}
-            className="fixed bottom-28 right-6 text-white">
+            className="fixed bottom-28 right-6">
             ✕
           </button>
           <PushNotificationManager />

@@ -11,23 +11,27 @@ webpush.setVapidDetails(
 let subscription: webpush.PushSubscription | null = null;
 
 function convertToWebPushSubscription(
-  sub: PushSubscription
+  sub: PushSubscriptionJSON
 ): webpush.PushSubscription {
   return {
     endpoint: sub.endpoint,
-    expirationTime: sub.expirationTime || null,
+    expirationTime: null,
     keys: {
-      p256dh: sub.getKey("p256dh")
-        ? btoa(String.fromCharCode(...new Uint8Array(sub.getKey("p256dh")!)))
-        : "",
-      auth: sub.getKey("auth")
-        ? btoa(String.fromCharCode(...new Uint8Array(sub.getKey("auth")!)))
-        : "",
+      p256dh: sub.keys.p256dh,
+      auth: sub.keys.auth,
     },
   };
 }
 
-export async function subscribeUser(sub: PushSubscription) {
+export type PushSubscriptionJSON = {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+};
+
+export async function subscribeUser(sub: PushSubscriptionJSON) {
   subscription = convertToWebPushSubscription(sub);
   // In a production environment, you would want to store the subscription in a database
   // For example: await db.subscriptions.create({ data: sub })
